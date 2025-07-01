@@ -4,8 +4,8 @@ import mongoose from "mongoose";
 import cors from "cors";
 import fs from "fs";
 import https from "https";
-
 import authRoutes from "./routes/auth.js";
+import fileRoutes from './routes/files.js'
 
 dotenv.config();
 
@@ -35,6 +35,8 @@ mongoose
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
 app.use("/api/auth", authRoutes);
+app.use('/api/files', fileRoutes)
+app.use('/uploads', express.static('uploads'))
 
 https.createServer(sslOptions, app).listen(port, host, () => {
   console.log(`🚀 Express HTTPS server running at https://${host}:${port}`);
