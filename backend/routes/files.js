@@ -32,6 +32,26 @@ router.get('/', verifyToken, async (req, res) => {
   res.json(entries.map((e) => ({ name: e.filename, original: e.originalname, timestamp: e.timestamp })))
 })
 
+router.get('/by-ip/:ip', verifyToken, async (req, res) => {
+  const requestingUser = req.user
+
+  if (requestingUser.role !== 'admin') {
+    return res.status(403).json({ msg: 'Pristup zabranjen' })
+  }
+
+  const ip = req.params.ip
+  const entries = await FileEntry.find({ ip }).sort({ timestamp: -1 })
+
+  res.json(
+    entries.map((e) => ({
+      name: e.filename,
+      original: e.originalname,
+      timestamp: e.timestamp,
+    }))
+  )
+})
+
+
 router.get('/download/:filename', verifyToken, async (req, res) => {
   const ip = getClientIp(req)
   const filename = req.params.filename

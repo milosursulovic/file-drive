@@ -67,6 +67,44 @@
       </ul>
       <p v-else class="text-sm text-gray-500">Nema fajlova za prikaz.</p>
     </div>
+
+    <div v-if="user?.role === 'admin'" class="mt-12">
+      <h3 class="text-lg font-semibold mb-2">🔍 Pretraga po IP adresi</h3>
+      <div class="flex flex-col sm:flex-row gap-4 mb-4">
+        <input
+          v-model="searchIp"
+          placeholder="Unesi IP adresu"
+          class="border border-gray-300 rounded px-4 py-2 w-full sm:w-64"
+        />
+        <button
+          @click="searchByIp"
+          class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          Pretraži
+        </button>
+      </div>
+
+      <ul v-if="searchedFiles.length" class="space-y-2">
+        <li
+          v-for="file in searchedFiles"
+          :key="file.name"
+          class="bg-white p-3 rounded shadow flex justify-between items-center"
+        >
+          <span>{{ file.original }}</span>
+          <a
+            :href="`${apiUrl}/api/files/download/${file.name}`"
+            class="text-blue-600 text-sm hover:underline"
+            target="_blank"
+          >
+            ⬇️ Preuzmi
+          </a>
+        </li>
+      </ul>
+
+      <p v-else-if="searchPerformed" class="text-sm text-gray-500">
+        Nema fajlova za ovu IP adresu.
+      </p>
+    </div>
   </MainLayout>
 </template>
 
@@ -79,6 +117,10 @@ const selectedFile = ref(null);
 const error = ref("");
 const success = ref("");
 const files = ref([]);
+const searchIp = ref("");
+const searchedFiles = ref([]);
+const searchPerformed = ref(false);
+const user = ref(null);
 
 const apiUrl = import.meta.env.VITE_API_URL;
 const token = localStorage.getItem("token");
@@ -152,8 +194,31 @@ async function downloadFile(filename) {
   window.URL.revokeObjectURL(url);
 }
 
+async function searchByIp() {
+  searchPerformed.value = false;
+  searchedFiles.value = [];
+  const token = localStorage.getItem("token");
+
+  try {
+    const res = await fetch(`${apiUrl}/api/files/by-ip/${searchIp.value}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) throw new Error("Greška prilikom pretrage");
+    const data = await res.json();
+    searchedFiles.value = data;
+    searchPerformed.value = true;
+  } catch (err) {
+    console.error(err);
+    searchPerformed.value = true;
+  }
+}
+
 onMounted(() => {
   document.title = `Početna - FileDrive`;
+  user.value = JSON.parse(localStorage.getItem("user") || "null");
   fetchFiles();
 });
 </script>
