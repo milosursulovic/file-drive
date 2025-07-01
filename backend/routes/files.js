@@ -3,6 +3,9 @@ import multer from 'multer'
 import fs from 'fs'
 import path from 'path'
 import { verifyToken } from '../middlewares/auth.js'
+import FileEntry from '../models/FileEntry.js'
+
+const uploadsDir = path.join('uploads')
 
 const router = express.Router()
 
@@ -20,48 +23,46 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage })
 
-router.get('/', verifyToken, (req, res) => {
-  const dirPath = path.join('uploads')
+const getClientIp = (req) =>
+  (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').replace('::ffff:', '')
 
-  fs.readdir(dirPath, (err, files) => {
-    if (err) {
-      return res.status(500).json({ msg: 'Greška pri čitanju foldera' })
-    }
-
-    const fileList = files.map((filename) => ({
-      name: filename,
-      url: `/uploads/${filename}`,
-    }))
-
-    res.json(fileList)
-  })
+router.get('/', verifyToken, async (req, res) => {
+  const ip = getClientIp(req)
+  const entries = await FileEntry.find({ ip }).sort({ timestamp: -1 })
+  res.json(entries.map((e) => ({ name: e.filename, original: e.originalname, timestamp: e.timestamp })))
 })
 
-router.get('/download/:filename', verifyToken, (req, res) => {
+router.get('/download/:filename', verifyToken, async (req, res) => {
+  const ip = getClientIp(req)
   const filename = req.params.filename
-  const filePath = path.join('uploads', filename)
+  const filePath = path.join(uploadsDir, filename)
 
-  if (!fs.existsSync(filePath)) {
-    return res.status(404).json({ msg: 'Fajl ne postoji' })
-  }
+  const entry = await FileEntry.findOne({ filename, ip })
+  if (!entry) return res.status(403).json({ msg: 'Nemaš pravo na ovaj fajl' })
+  if (!fs.existsSync(filePath)) return res.status(404).json({ msg: 'Fajl ne postoji' })
 
-  res.download(filePath, filename, (err) => {
-    if (err) {
-      res.status(500).json({ msg: 'Greška pri preuzimanju fajla' })
-    }
-  })
+  res.download(filePath)
 })
 
-router.post('/upload', verifyToken, upload.single('file'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ msg: 'Izaberite fajl' })
-  }
 
-  res.json({
-    msg: 'Fajl sačuvan uspešno',
+router.post('/upload', verifyToken, upload.single('file'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ msg: 'Izaberite fajl' })
+
+  const ip = getClientIp(req)
+
+  const entry = new FileEntry({
     filename: req.file.filename,
     originalname: req.file.originalname,
-    size: req.file.size,
+    ip,
+  })
+
+  await entry.save()
+
+  res.json({
+    msg: 'Fajl uspešno sačuvan',
+    filename: entry.filename,
+    originalname: entry.originalname,
+    ip,
   })
 })
 

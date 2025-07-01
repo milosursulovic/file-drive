@@ -14,17 +14,41 @@
       <!-- Upload form -->
       <form
         @submit.prevent="uploadFile"
-        class="bg-white p-4 rounded shadow space-y-4"
+        class="bg-white p-4 rounded shadow flex flex-col sm:flex-row sm:items-center gap-4"
       >
-        <input type="file" @change="handleFileChange" />
+        <!-- Custom File Input -->
+        <label
+          class="relative cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium py-2 px-4 rounded border border-gray-300 w-full sm:w-auto text-center"
+        >
+          📁 Izaberi fajl
+          <input
+            type="file"
+            @change="handleFileChange"
+            class="absolute inset-0 opacity-0 cursor-pointer"
+          />
+        </label>
+
+        <!-- Prikaz imena fajla -->
+        <div
+          v-if="selectedFile"
+          class="text-sm text-gray-700 max-w-sm truncate w-full sm:w-auto"
+        >
+          {{ selectedFile.name }}
+        </div>
+
+        <!-- Submit dugme -->
         <button
           type="submit"
-          class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          class="bg-green-600 text-white text-sm px-5 py-2 rounded hover:bg-green-700 transition w-full sm:w-auto"
         >
-          Pošalji
+          ✅ Pošalji
         </button>
-        <p v-if="success" class="text-green-600">{{ success }}</p>
-        <p v-if="error" class="text-red-600">{{ error }}</p>
+
+        <!-- Poruke -->
+        <p v-if="success" class="text-green-600 text-sm w-full">
+          {{ success }}
+        </p>
+        <p v-if="error" class="text-red-600 text-sm w-full">{{ error }}</p>
       </form>
     </div>
 
