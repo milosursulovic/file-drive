@@ -91,13 +91,7 @@
           class="bg-white p-3 rounded shadow flex justify-between items-center"
         >
           <span>{{ file.original }}</span>
-          <a
-            :href="`${apiUrl}/api/files/download/${file.name}`"
-            class="text-blue-600 text-sm hover:underline"
-            target="_blank"
-          >
-            ⬇️ Preuzmi
-          </a>
+          <button @click="downloadFile(file.name)">⬇️ Preuzmi</button>
         </li>
       </ul>
 
