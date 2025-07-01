@@ -57,9 +57,17 @@ router.get('/download/:filename', verifyToken, async (req, res) => {
   const filename = req.params.filename
   const filePath = path.join(uploadsDir, filename)
 
-  const entry = await FileEntry.findOne({ filename, ip })
-  if (!entry) return res.status(403).json({ msg: 'Nemaš pravo na ovaj fajl' })
-  if (!fs.existsSync(filePath)) return res.status(404).json({ msg: 'Fajl ne postoji' })
+  const entry = await FileEntry.findOne({ filename })
+
+  if (!entry) return res.status(404).json({ msg: 'Fajl ne postoji' })
+
+  if (entry.ip !== ip && req.user?.role !== 'admin') {
+    return res.status(403).json({ msg: 'Nemaš pravo na ovaj fajl' })
+  }
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ msg: 'Fajl fizički ne postoji' })
+  }
 
   res.download(filePath)
 })

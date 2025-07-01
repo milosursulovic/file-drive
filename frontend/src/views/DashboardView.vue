@@ -61,7 +61,7 @@
           :key="file.name"
           class="flex items-center justify-between bg-white p-3 rounded shadow"
         >
-          <span>{{ file.name }}</span>
+          <span>{{ file.original }}</span>
           <button @click="downloadFile(file.name)">⬇️ Preuzmi</button>
         </li>
       </ul>
