@@ -5,12 +5,19 @@
       <div
         class="max-w-7xl mx-auto flex justify-between items-center px-4 py-3"
       >
-        <h1 class="text-xl font-bold text-blue-600">📁 FileDrive</h1>
+        <h1 class="text-xl font-bold text-blue-600 flex items-center gap-2">
+          <img
+            src="@/assets/icons/filedrive.png"
+            alt="FileDrive Logo"
+            class="w-6 h-6"
+          />
+          FileDrive
+        </h1>
 
         <div v-if="user" class="flex items-center gap-3 text-sm text-gray-700">
           <span>👤 {{ user.username }} ({{ user.role }})</span>
           <button @click="logout" class="text-red-600 hover:underline">
-            Logout
+            Odjavi se
           </button>
         </div>
       </div>
@@ -22,8 +29,12 @@
     </main>
 
     <!-- Footer -->
-    <footer class="text-sm text-slate-500 text-center py-4">
-      Verzija: 1.0.0 • © {{ new Date().getFullYear() }} FileDrive
+    <footer class="text-center text-sm text-gray-500 py-4 border-t">
+      <div>
+        &copy; {{ new Date().getFullYear() }} Informacioni sistem Opšte bolnice
+        Bor
+      </div>
+      <div class="mt-1 text-xs text-gray-400">Verzija: {{ appVersion }}</div>
     </footer>
   </div>
 </template>
@@ -31,9 +42,12 @@
 <script setup>
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
+import Icon from "@/assets/icons/filedrive.png";
 
 const router = useRouter();
 const user = ref(null);
+
+const appVersion = import.meta.env.VITE_APP_VERSION;
 
 onMounted(() => {
   const u = localStorage.getItem("user");

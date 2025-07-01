@@ -1,25 +1,25 @@
 <template>
   <div class="max-w-sm mx-auto mt-20">
-    <h2 class="text-2xl font-bold mb-4">Login</h2>
-    <input v-model="username" placeholder="Username" class="input mb-3" />
+    <h2 class="text-2xl font-bold mb-4">Prijavi se</h2>
+    <input v-model="username" placeholder="Korisničko ime" class="input mb-3" />
     <input
       v-model="password"
       type="password"
-      placeholder="Password"
+      placeholder="Lozinka"
       class="input mb-3"
     />
     <button
       @click="handleLogin"
       class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
     >
-      🔐 Login
+      🔐 Prijavi se
     </button>
     <p v-if="error" class="text-red-600 mt-2 text-sm">{{ error }}</p>
   </div>
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 
 const username = ref("");
@@ -53,4 +53,8 @@ const handleLogin = async () => {
     error.value = "Pogrešno korisničko ime ili lozinka";
   }
 };
+
+onMounted(() => {
+  document.title = `Prijavi se - FileDrive`;
+});
 </script>

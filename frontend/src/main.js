@@ -6,6 +6,11 @@ import router from "./router";
 
 const app = createApp(App);
 
-app.use(router);
+router.beforeEach((to, from, next) => {
+  const defaultTitle = "FileDrive";
+  document.title = to.meta.title || defaultTitle;
+  next();
+});
 
+app.use(router);
 app.mount("#app");
