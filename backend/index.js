@@ -36,7 +36,6 @@ mongoose
 
 app.use("/api/auth", authRoutes);
 app.use('/api/files', fileRoutes)
-app.use('/uploads', express.static('uploads'))
 
 https.createServer(sslOptions, app).listen(port, host, () => {
   console.log(`🚀 Express HTTPS server running at https://${host}:${port}`);

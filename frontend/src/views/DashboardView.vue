@@ -38,13 +38,7 @@
           class="flex items-center justify-between bg-white p-3 rounded shadow"
         >
           <span>{{ file.name }}</span>
-          <a
-            :href="apiUrl + file.url"
-            target="_blank"
-            class="text-blue-600 hover:underline text-sm"
-          >
-            ⬇️ Preuzmi
-          </a>
+          <button @click="downloadFile(file.name)">⬇️ Preuzmi</button>
         </li>
       </ul>
       <p v-else class="text-sm text-gray-500">Nema fajlova za prikaz.</p>
@@ -63,6 +57,7 @@ const success = ref("");
 const files = ref([]);
 
 const apiUrl = import.meta.env.VITE_API_URL;
+const token = localStorage.getItem("token");
 
 function handleFileChange(e) {
   selectedFile.value = e.target.files[0];
@@ -70,7 +65,11 @@ function handleFileChange(e) {
 
 async function fetchFiles() {
   try {
-    const res = await fetch(`${apiUrl}/api/files`);
+    const res = await fetch(`${apiUrl}/api/files`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     if (!res.ok) throw new Error("Neuspešno učitavanje fajlova");
     files.value = await res.json();
   } catch (err) {
@@ -93,6 +92,9 @@ async function uploadFile() {
   try {
     const res = await fetch(`${apiUrl}/api/files/upload`, {
       method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
       body: formData,
     });
 
@@ -105,6 +107,25 @@ async function uploadFile() {
   } catch (err) {
     error.value = "Greška pri uploadu";
   }
+}
+
+async function downloadFile(filename) {
+  const token = localStorage.getItem("token");
+  const res = await fetch(`${apiUrl}/api/files/download/${filename}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) return alert("Greška pri preuzimanju");
+
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  window.URL.revokeObjectURL(url);
 }
 
 onMounted(() => {

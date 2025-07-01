@@ -2,6 +2,7 @@ import express from 'express'
 import multer from 'multer'
 import fs from 'fs'
 import path from 'path'
+import { verifyToken } from '../middlewares/auth.js'
 
 const router = express.Router()
 
@@ -19,7 +20,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage })
 
-router.get('/', (req, res) => {
+router.get('/', verifyToken, (req, res) => {
   const dirPath = path.join('uploads')
 
   fs.readdir(dirPath, (err, files) => {
@@ -36,7 +37,22 @@ router.get('/', (req, res) => {
   })
 })
 
-router.post('/upload', upload.single('file'), (req, res) => {
+router.get('/download/:filename', verifyToken, (req, res) => {
+  const filename = req.params.filename
+  const filePath = path.join('uploads', filename)
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ msg: 'Fajl ne postoji' })
+  }
+
+  res.download(filePath, filename, (err) => {
+    if (err) {
+      res.status(500).json({ msg: 'Greška pri preuzimanju fajla' })
+    }
+  })
+})
+
+router.post('/upload', verifyToken, upload.single('file'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ msg: 'Izaberite fajl' })
   }
