@@ -23,7 +23,14 @@
           :key="file.name"
           class="bg-white p-3 rounded shadow flex justify-between items-center"
         >
-          <span>{{ file.original }}</span>
+          <div>
+            <p class="text-gray-800 font-medium truncate">
+              {{ file.original }}
+            </p>
+            <p class="text-xs text-gray-500">
+              📁 Kategorija: {{ file.category || "Ostalo" }}
+            </p>
+          </div>
           <div class="flex gap-3">
             <button @click="downloadFile(file.name)" class="text-blue-600">
               Preuzmi ⬇️

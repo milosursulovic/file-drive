@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node index",
     "dev": "nodemon index",
+    "migrate": "node ./database/migrations.js",
     "seed:admin": "node ./database/seeders/seedAdmin.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

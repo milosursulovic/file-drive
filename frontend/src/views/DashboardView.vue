@@ -11,12 +11,10 @@
     </div>
 
     <div v-if="showUpload" class="mb-6">
-      <!-- Upload form -->
       <form
         @submit.prevent="uploadFile"
         class="bg-white p-4 rounded shadow flex flex-col sm:flex-row sm:items-center gap-4"
       >
-        <!-- Custom File Input -->
         <label
           class="relative cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium py-2 px-4 rounded border border-gray-300 w-full sm:w-auto text-center"
         >
@@ -36,7 +34,6 @@
           {{ selectedFile.name }}
         </div>
 
-        <!-- Submit dugme -->
         <button
           type="submit"
           class="bg-green-600 text-white text-sm px-5 py-2 rounded hover:bg-green-700 transition w-full sm:w-auto"
@@ -44,15 +41,24 @@
           ✅ Pošalji
         </button>
 
-        <!-- Poruke -->
         <p v-if="success" class="text-green-600 text-sm w-full">
           {{ success }}
         </p>
         <p v-if="error" class="text-red-600 text-sm w-full">{{ error }}</p>
+        <select
+          v-model="selectedCategory"
+          class="border border-gray-300 rounded px-4 py-2 text-sm text-gray-700 w-full sm:w-auto"
+        >
+          <option disabled value="">-- Izaberi kategoriju --</option>
+          <option>Dokument</option>
+          <option>Slika</option>
+          <option>Backup</option>
+          <option>Log</option>
+          <option>Ostalo</option>
+        </select>
       </form>
     </div>
 
-    <!-- Fajlovi / sadržaj -->
     <div class="mt-10">
       <h3 class="text-lg font-semibold mb-4">📁 Lista fajlova</h3>
       <ul v-if="files.length" class="space-y-2">
@@ -61,12 +67,15 @@
           :key="file.name"
           class="flex items-center justify-between bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition"
         >
-          <!-- Ime fajla -->
-          <span class="text-gray-800 font-medium truncate max-w-[40%]">
-            📄 {{ file.original }}
-          </span>
+          <div>
+            <p class="text-gray-800 font-medium truncate">
+              {{ file.original }}
+            </p>
+            <p class="text-xs text-gray-500">
+              📁 Kategorija: {{ file.category || "Ostalo" }}
+            </p>
+          </div>
 
-          <!-- Akcije -->
           <div class="flex items-center gap-4">
             <button
               @click="downloadFile(file.name)"
@@ -99,6 +108,7 @@ const error = ref("");
 const success = ref("");
 const files = ref([]);
 const user = ref(null);
+const selectedCategory = ref("");
 
 const apiUrl = import.meta.env.VITE_API_URL;
 const token = localStorage.getItem("token");
@@ -132,6 +142,7 @@ async function uploadFile() {
 
   const formData = new FormData();
   formData.append("file", selectedFile.value);
+  formData.append("category", selectedCategory.value || "Ostalo");
 
   try {
     const res = await fetch(`${apiUrl}/api/files/upload`, {

@@ -36,6 +36,7 @@ router.get("/", verifyToken, async (req, res) => {
     entries.map((e) => ({
       name: e.filename,
       original: e.originalname,
+      category: e.category,
       timestamp: e.timestamp,
     }))
   );
@@ -55,6 +56,7 @@ router.get("/by-ip/:ip", verifyToken, async (req, res) => {
     entries.map((e) => ({
       name: e.filename,
       original: e.originalname,
+      category: e.category,
       timestamp: e.timestamp,
     }))
   );
@@ -85,10 +87,13 @@ router.post("/upload", verifyToken, upload.single("file"), async (req, res) => {
 
   const ip = getClientIp(req);
 
+  const category = req.body.category || "Ostalo";
+
   const entry = new FileEntry({
     filename: req.file.filename,
     originalname: req.file.originalname,
     ip,
+    category,
   });
 
   await entry.save();
