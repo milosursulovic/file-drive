@@ -59,10 +59,29 @@
         <li
           v-for="file in files"
           :key="file.name"
-          class="flex items-center justify-between bg-white p-3 rounded shadow"
+          class="flex items-center justify-between bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition"
         >
-          <span>{{ file.original }}</span>
-          <button @click="downloadFile(file.name)">⬇️ Preuzmi</button>
+          <!-- Ime fajla -->
+          <span class="text-gray-800 font-medium truncate max-w-[40%]">
+            📄 {{ file.original }}
+          </span>
+
+          <!-- Akcije -->
+          <div class="flex items-center gap-4">
+            <button
+              @click="downloadFile(file.name)"
+              class="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium"
+            >
+              ⬇️ <span>Preuzmi</span>
+            </button>
+
+            <button
+              @click="deleteFile(file.name)"
+              class="flex items-center gap-1 text-red-600 hover:text-red-800 text-sm font-medium"
+            >
+              🗑️ <span>Obriši</span>
+            </button>
+          </div>
         </li>
       </ul>
       <p v-else class="text-sm text-gray-500">Nema fajlova za prikaz.</p>
@@ -207,6 +226,29 @@ async function searchByIp() {
   } catch (err) {
     console.error(err);
     searchPerformed.value = true;
+  }
+}
+
+async function deleteFile(filename) {
+  const confirmDelete = confirm(
+    `Da li si siguran da želiš da obrišeš fajl "${filename}"?`,
+  );
+  if (!confirmDelete) return;
+
+  try {
+    const res = await fetch(`${apiUrl}/api/files/${filename}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) throw new Error("Brisanje nije uspelo");
+
+    success.value = "Fajl je uspešno obrisan";
+    fetchFiles();
+  } catch (err) {
+    error.value = "Greška pri brisanju fajla";
   }
 }
 
