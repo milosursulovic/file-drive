@@ -15,6 +15,15 @@
         >
           Pretraži
         </button>
+
+        <input
+          v-if="searchedFiles.length"
+          v-model="searchTerm"
+          @input="fetchFiles(searchTerm)"
+          type="text"
+          placeholder="🔍 Pretraži po imenu fajla..."
+          class="border border-gray-300 rounded px-4 py-2 w-full sm:w-96 text-sm"
+        />
       </div>
 
       <ul v-if="searchedFiles.length" class="space-y-2">
@@ -47,7 +56,8 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import MainLayout from "@/layouts/MainLayout.vue";
 
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -57,14 +67,24 @@ const searchIp = ref("");
 const searchedFiles = ref([]);
 const searchPerformed = ref(false);
 
-async function searchByIp() {
+const searchTerm = ref("");
+const debounceTimer = ref(null);
+const route = useRoute();
+const router = useRouter();
+
+async function searchByIp(search = "") {
   searchPerformed.value = false;
   searchedFiles.value = [];
 
   try {
-    const res = await fetch(`${apiUrl}/api/files/by-ip/${searchIp.value}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await fetch(
+      `${apiUrl}/api/files/by-ip/${searchIp.value}?search=${encodeURIComponent(
+        search,
+      )}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
 
     if (!res.ok) throw new Error("Greška pri pretrazi");
     const data = await res.json();
@@ -91,4 +111,20 @@ async function downloadFile(filename) {
   link.click();
   window.URL.revokeObjectURL(url);
 }
+
+watch(searchTerm, (newTerm) => {
+  clearTimeout(debounceTimer.value);
+  debounceTimer.value = setTimeout(() => {
+    router.replace({ query: { ...route.query, search: newTerm || undefined } });
+    searchByIp(newTerm);
+  }, 300);
+});
+
+onMounted(() => {
+  document.title = `Pretraga IP - FileDrive`;
+
+  const initialSearch = route.query.search || "";
+  searchTerm.value = initialSearch;
+  searchByIp(initialSearch);
+});
 </script>

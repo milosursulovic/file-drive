@@ -31,7 +31,16 @@ const getClientIp = (req) =>
 
 router.get("/", verifyToken, async (req, res) => {
   const ip = getClientIp(req);
-  const entries = await FileEntry.find({ ip }).sort({ timestamp: -1 });
+  const search = req.query.search?.toLowerCase() || "";
+
+  let query = { ip };
+
+  if (search) {
+    query.originalname = { $regex: search, $options: "i" };
+  }
+
+  const entries = await FileEntry.find(query).sort({ timestamp: -1 });
+
   res.json(
     entries.map((e) => ({
       name: e.filename,
@@ -49,8 +58,16 @@ router.get("/by-ip/:ip", verifyToken, async (req, res) => {
     return res.status(403).json({ msg: "Pristup zabranjen" });
   }
 
+  const search = req.query.search?.toLowerCase() || "";
   const ip = req.params.ip;
-  const entries = await FileEntry.find({ ip }).sort({ timestamp: -1 });
+
+  let query = { ip };
+
+  if (search) {
+    query.originalname = { $regex: search, $options: "i" };
+  }
+
+  const entries = await FileEntry.find(query).sort({ timestamp: -1 });
 
   res.json(
     entries.map((e) => ({

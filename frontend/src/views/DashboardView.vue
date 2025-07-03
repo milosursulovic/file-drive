@@ -26,7 +26,6 @@
           />
         </label>
 
-        <!-- Prikaz imena fajla -->
         <div
           v-if="selectedFile"
           class="text-sm text-gray-700 max-w-sm truncate w-full sm:w-auto"
@@ -61,6 +60,16 @@
 
     <div class="mt-10">
       <h3 class="text-lg font-semibold mb-4">📁 Lista fajlova</h3>
+      <div class="mb-4">
+        <input
+          v-model="searchTerm"
+          @input="fetchFiles(searchTerm)"
+          type="text"
+          placeholder="🔍 Pretraži po imenu fajla..."
+          class="border border-gray-300 rounded px-4 py-2 w-full sm:w-96 text-sm"
+        />
+      </div>
+
       <ul v-if="files.length" class="space-y-2">
         <li
           v-for="file in files"
@@ -99,7 +108,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import MainLayout from "@/layouts/MainLayout.vue";
 
 const showUpload = ref(false);
@@ -109,6 +119,10 @@ const success = ref("");
 const files = ref([]);
 const user = ref(null);
 const selectedCategory = ref("");
+const searchTerm = ref("");
+const debounceTimer = ref(null);
+const route = useRoute();
+const router = useRouter();
 
 const apiUrl = import.meta.env.VITE_API_URL;
 const token = localStorage.getItem("token");
@@ -117,13 +131,16 @@ function handleFileChange(e) {
   selectedFile.value = e.target.files[0];
 }
 
-async function fetchFiles() {
+async function fetchFiles(search = "") {
   try {
-    const res = await fetch(`${apiUrl}/api/files`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
+    const res = await fetch(
+      `${apiUrl}/api/files?search=${encodeURIComponent(search)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       },
-    });
+    );
     if (!res.ok) throw new Error("Neuspešno učitavanje fajlova");
     files.value = await res.json();
   } catch (err) {
@@ -206,9 +223,20 @@ async function deleteFile(filename) {
   }
 }
 
+watch(searchTerm, (newTerm) => {
+  clearTimeout(debounceTimer.value);
+  debounceTimer.value = setTimeout(() => {
+    router.replace({ query: { ...route.query, search: newTerm || undefined } });
+    fetchFiles(newTerm);
+  }, 300);
+});
+
 onMounted(() => {
   document.title = `Početna - FileDrive`;
   user.value = JSON.parse(localStorage.getItem("user") || "null");
-  fetchFiles();
+
+  const initialSearch = route.query.search || "";
+  searchTerm.value = initialSearch;
+  fetchFiles(initialSearch);
 });
 </script>
