@@ -48,7 +48,7 @@
           @click="exportXLSXByIp"
           class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
         >
-          📤 Export XLSX
+          📤 Izvezi XLSX
         </button>
       </div>
 
@@ -198,7 +198,7 @@ async function exportCSV() {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      },
+      }
     );
 
     if (!res.ok) throw new Error("Greška pri izvozu CSV-a");
@@ -227,7 +227,7 @@ async function exportXLSXByIp() {
     `${apiUrl}/api/files/by-ip/export/xlsx?${query.toString()}`,
     {
       headers: { Authorization: `Bearer ${token}` },
-    },
+    }
   );
 
   if (!res.ok) {

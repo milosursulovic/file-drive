@@ -87,7 +87,7 @@
           @click="exportXLSX"
           class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
         >
-          📤 Export XLSX
+          📤 Izvezi XLSX
         </button>
       </div>
 
@@ -190,7 +190,7 @@ function handleFileChange(e) {
 
 async function fetchFiles(search = "", sort = "desc", page = 1) {
   const url = `${apiUrl}/api/files?search=${encodeURIComponent(
-    search,
+    search
   )}&sort=${sort}&page=${page}&limit=10`;
 
   const res = await fetch(url, {
@@ -261,7 +261,7 @@ async function downloadFile(filename) {
 
 async function deleteFile(filename) {
   const confirmDelete = confirm(
-    `Da li si siguran da želiš da obrišeš fajl "${filename}"?`,
+    `Da li si siguran da želiš da obrišeš fajl "${filename}"?`
   );
   if (!confirmDelete) return;
 
@@ -286,13 +286,13 @@ async function exportCSV() {
   try {
     const res = await fetch(
       `${apiUrl}/api/files/export/csv?search=${encodeURIComponent(
-        searchTerm.value,
+        searchTerm.value
       )}&sort=${sortOrder.value}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      },
+      }
     );
 
     if (!res.ok) throw new Error("Greška pri izvozu CSV-a");
@@ -320,7 +320,7 @@ async function exportXLSX() {
     `${apiUrl}/api/files/export/xlsx?${query.toString()}`,
     {
       headers: { Authorization: `Bearer ${token}` },
-    },
+    }
   );
 
   if (!res.ok) {
