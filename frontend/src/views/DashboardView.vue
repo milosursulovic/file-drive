@@ -91,49 +91,70 @@
         </button>
       </div>
 
-      <ul v-if="files.length" class="space-y-2">
-        <li
-          v-for="file in files"
-          :key="file.name"
-          class="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition"
-        >
-          <div>
-            <p class="text-gray-900 font-semibold text-base truncate">
-              📄 {{ file.original }}
-            </p>
-            <p class="text-sm text-gray-500 mt-1">
-              📂 Kategorija:
-              <span class="font-medium text-gray-700">{{
-                file.category || "Ostalo"
-              }}</span>
-            </p>
-          </div>
+      <div v-if="files.length">
+        <ul class="space-y-2">
+          <li
+            v-for="file in files"
+            :key="file.name"
+            class="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition"
+          >
+            <div>
+              <p class="text-gray-900 font-semibold text-base truncate">
+                📄 {{ file.original }}
+              </p>
+              <p class="text-sm text-gray-500 mt-1">
+                📂 Kategorija:
+                <span class="font-medium text-gray-700">{{
+                  file.category || "Ostalo"
+                }}</span>
+              </p>
+            </div>
 
-          <div class="flex flex-col sm:items-end gap-2 mt-4 sm:mt-0">
-            <div class="flex gap-4 justify-end">
-              <button
-                @click="downloadFile(file.name)"
-                class="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium"
-              >
-                ⬇️ <span>Preuzmi</span>
-              </button>
+            <div class="flex flex-col sm:items-end gap-2 mt-4 sm:mt-0">
+              <div class="flex gap-4 justify-end">
+                <button
+                  @click="downloadFile(file.name)"
+                  class="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                >
+                  ⬇️ <span>Preuzmi</span>
+                </button>
 
-              <button
-                @click="deleteFile(file.name)"
-                class="flex items-center gap-1 text-red-600 hover:text-red-800 text-sm font-medium"
-              >
-                🗑️ <span>Obriši</span>
-              </button>
+                <button
+                  @click="deleteFile(file.name)"
+                  class="flex items-center gap-1 text-red-600 hover:text-red-800 text-sm font-medium"
+                >
+                  🗑️ <span>Obriši</span>
+                </button>
+              </div>
+              <div class="text-xs text-gray-500 flex items-center gap-1">
+                ⏱️ Dodato: {{ formatDate(file.timestamp) }}
+              </div>
+              <div class="text-xs text-gray-500 flex items-center gap-1">
+                📦 Veličina: {{ formatFileSize(file.size) }}
+              </div>
             </div>
-            <div class="text-xs text-gray-500 flex items-center gap-1">
-              ⏱️ Dodato: {{ formatDate(file.timestamp) }}
-            </div>
-            <div class="text-xs text-gray-500 flex items-center gap-1">
-              📦 Veličina: {{ formatFileSize(file.size) }}
-            </div>
-          </div>
-        </li>
-      </ul>
+          </li>
+        </ul>
+        <div class="mt-6 flex justify-center gap-2">
+          <button
+            @click="changePage(currentPage - 1)"
+            :disabled="currentPage <= 1"
+            class="px-3 py-1 border rounded disabled:opacity-50"
+          >
+            ◀️
+          </button>
+          <span class="px-3 py-1 text-sm">
+            Strana {{ currentPage }} od {{ totalPages }}
+          </span>
+          <button
+            @click="changePage(currentPage + 1)"
+            :disabled="currentPage >= totalPages"
+            class="px-3 py-1 border rounded disabled:opacity-50"
+          >
+            ▶️
+          </button>
+        </div>
+      </div>
       <p v-else class="text-sm text-gray-500">Nema fajlova za prikaz.</p>
     </div>
   </MainLayout>
@@ -160,27 +181,30 @@ const router = useRouter();
 const sortOrder = ref("desc");
 const apiUrl = import.meta.env.VITE_API_URL;
 const token = localStorage.getItem("token");
+const currentPage = ref(parseInt(route.query.page) || 1);
+const totalPages = ref(1);
 
 function handleFileChange(e) {
   selectedFile.value = e.target.files[0];
 }
 
-async function fetchFiles(search = "", sort = "desc") {
-  try {
-    const url = `${apiUrl}/api/files?search=${encodeURIComponent(
-      search,
-    )}&sort=${sort}`;
-    const res = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+async function fetchFiles(search = "", sort = "desc", page = 1) {
+  const url = `${apiUrl}/api/files?search=${encodeURIComponent(
+    search,
+  )}&sort=${sort}&page=${page}&limit=10`;
 
-    if (!res.ok) throw new Error("Neuspešno učitavanje fajlova");
-    files.value = await res.json();
-  } catch (err) {
-    console.error(err);
-  }
+  const res = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) throw new Error("Neuspešno učitavanje fajlova");
+
+  const data = await res.json();
+  files.value = data.files;
+  totalPages.value = data.totalPages;
+  currentPage.value = data.page;
 }
 
 async function uploadFile() {
@@ -313,6 +337,17 @@ async function exportXLSX() {
   window.URL.revokeObjectURL(url);
 }
 
+function changePage(newPage) {
+  router.replace({
+    query: {
+      search: searchTerm.value || undefined,
+      sort: sortOrder.value || undefined,
+      page: newPage,
+    },
+  });
+  fetchFiles(searchTerm.value, sortOrder.value, newPage);
+}
+
 watch([searchTerm, sortOrder], ([newSearch, newSort]) => {
   clearTimeout(debounceTimer.value);
   debounceTimer.value = setTimeout(() => {
@@ -320,9 +355,10 @@ watch([searchTerm, sortOrder], ([newSearch, newSort]) => {
       query: {
         search: newSearch || undefined,
         sort: newSort || undefined,
+        page: 1,
       },
     });
-    fetchFiles(newSearch, newSort);
+    fetchFiles(newSearch, newSort, 1);
   }, 300);
 });
 
@@ -332,7 +368,8 @@ onMounted(() => {
 
   searchTerm.value = route.query.search || "";
   sortOrder.value = route.query.sort || "desc";
+  currentPage.value = parseInt(route.query.page) || 1;
 
-  fetchFiles(searchTerm.value, sortOrder.value);
+  fetchFiles(searchTerm.value, sortOrder.value, currentPage.value);
 });
 </script>

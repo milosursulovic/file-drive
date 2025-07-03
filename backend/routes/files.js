@@ -35,6 +35,9 @@ router.get("/", verifyToken, async (req, res) => {
   const ip = getClientIp(req);
   const search = req.query.search?.toLowerCase() || "";
   const sort = req.query.sort === "asc" ? 1 : -1;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
 
   let query = { ip };
 
@@ -42,17 +45,24 @@ router.get("/", verifyToken, async (req, res) => {
     query.originalname = { $regex: search, $options: "i" };
   }
 
-  const entries = await FileEntry.find(query).sort({ timestamp: sort });
+  const total = await FileEntry.countDocuments(query);
+  const entries = await FileEntry.find(query)
+    .sort({ timestamp: sort })
+    .skip(skip)
+    .limit(limit);
 
-  res.json(
-    entries.map((e) => ({
+  res.json({
+    files: entries.map((e) => ({
       name: e.filename,
       original: e.originalname,
       category: e.category,
       timestamp: e.timestamp,
       size: e.size,
-    }))
-  );
+    })),
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  });
 });
 
 router.get("/by-ip", verifyToken, async (req, res) => {
@@ -65,6 +75,9 @@ router.get("/by-ip", verifyToken, async (req, res) => {
   const search = req.query.search?.toLowerCase() || "";
   const sort = req.query.sort === "asc" ? 1 : -1;
   const ip = req.query.ip;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
 
   if (!ip) {
     return res.status(400).json({ msg: "IP adresa je obavezna" });
@@ -76,17 +89,24 @@ router.get("/by-ip", verifyToken, async (req, res) => {
     query.originalname = { $regex: search, $options: "i" };
   }
 
-  const entries = await FileEntry.find(query).sort({ timestamp: sort });
+  const total = await FileEntry.countDocuments(query);
+  const entries = await FileEntry.find(query)
+    .sort({ timestamp: sort })
+    .skip(skip)
+    .limit(limit);
 
-  res.json(
-    entries.map((e) => ({
+  res.json({
+    files: entries.map((e) => ({
       name: e.filename,
       original: e.originalname,
       category: e.category,
       timestamp: e.timestamp,
       size: e.size,
-    }))
-  );
+    })),
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  });
 });
 
 router.get("/download/:filename", verifyToken, async (req, res) => {

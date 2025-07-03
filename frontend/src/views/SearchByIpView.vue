@@ -52,43 +52,63 @@
         </button>
       </div>
 
-      <ul v-if="searchedFiles.length" class="space-y-2">
-        <li
-          v-for="file in searchedFiles"
-          :key="file.name"
-          class="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition"
-        >
-          <div>
-            <p class="text-gray-900 font-semibold text-base truncate">
-              📄 {{ file.original }}
-            </p>
-            <p class="text-sm text-gray-500 mt-1">
-              📂 Kategorija:
-              <span class="font-medium text-gray-700">{{
-                file.category || "Ostalo"
-              }}</span>
-            </p>
-          </div>
+      <div v-if="searchedFiles.length">
+        <ul class="space-y-2">
+          <li
+            v-for="file in searchedFiles"
+            :key="file.name"
+            class="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition"
+          >
+            <div>
+              <p class="text-gray-900 font-semibold text-base truncate">
+                📄 {{ file.original }}
+              </p>
+              <p class="text-sm text-gray-500 mt-1">
+                📂 Kategorija:
+                <span class="font-medium text-gray-700">{{
+                  file.category || "Ostalo"
+                }}</span>
+              </p>
+            </div>
 
-          <div class="flex flex-col sm:items-end gap-2 mt-4 sm:mt-0">
-            <div class="flex gap-4 justify-end">
-              <button
-                @click="downloadFile(file.name)"
-                class="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium"
-              >
-                ⬇️ <span>Preuzmi</span>
-              </button>
+            <div class="flex flex-col sm:items-end gap-2 mt-4 sm:mt-0">
+              <div class="flex gap-4 justify-end">
+                <button
+                  @click="downloadFile(file.name)"
+                  class="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                >
+                  ⬇️ <span>Preuzmi</span>
+                </button>
+              </div>
+              <div class="text-xs text-gray-500 flex items-center gap-1">
+                ⏱️ Dodato: {{ formatDate(file.timestamp) }}
+              </div>
+              <div class="text-xs text-gray-500 flex items-center gap-1">
+                📦 Veličina: {{ formatFileSize(file.size) }}
+              </div>
             </div>
-            <div class="text-xs text-gray-500 flex items-center gap-1">
-              ⏱️ Dodato: {{ formatDate(file.timestamp) }}
-            </div>
-            <div class="text-xs text-gray-500 flex items-center gap-1">
-              📦 Veličina: {{ formatFileSize(file.size) }}
-            </div>
-          </div>
-        </li>
-      </ul>
-
+          </li>
+        </ul>
+        <div class="mt-6 flex justify-center gap-2">
+          <button
+            @click="changePage(currentPage - 1)"
+            :disabled="currentPage <= 1"
+            class="px-3 py-1 border rounded disabled:opacity-50"
+          >
+            ◀️
+          </button>
+          <span class="px-3 py-1 text-sm">
+            Strana {{ currentPage }} od {{ totalPages }}
+          </span>
+          <button
+            @click="changePage(currentPage + 1)"
+            :disabled="currentPage >= totalPages"
+            class="px-3 py-1 border rounded disabled:opacity-50"
+          >
+            ▶️
+          </button>
+        </div>
+      </div>
       <p v-else-if="searchPerformed" class="text-sm text-gray-500">
         Nema fajlova za ovu IP adresu.
       </p>
@@ -113,6 +133,8 @@ const debounceTimer = ref(null);
 const route = useRoute();
 const router = useRouter();
 const sortOrder = ref("desc");
+const currentPage = ref(parseInt(route.query.page) || 1);
+const totalPages = ref(1);
 
 async function searchByIp() {
   searchPerformed.value = false;
@@ -122,6 +144,8 @@ async function searchByIp() {
     ip: searchIp.value,
     search: searchTerm.value || "",
     sort: sortOrder.value,
+    page: currentPage.value,
+    limit: 10,
   });
 
   router.replace({ query: Object.fromEntries(query.entries()) });
@@ -132,8 +156,11 @@ async function searchByIp() {
     });
 
     if (!res.ok) throw new Error("Greška pri pretrazi");
+
     const data = await res.json();
-    searchedFiles.value = data;
+    searchedFiles.value = data.files;
+    totalPages.value = data.totalPages;
+    currentPage.value = data.page;
     searchPerformed.value = true;
   } catch (err) {
     console.error(err);
@@ -171,7 +198,7 @@ async function exportCSV() {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      },
+      }
     );
 
     if (!res.ok) throw new Error("Greška pri izvozu CSV-a");
@@ -200,7 +227,7 @@ async function exportXLSXByIp() {
     `${apiUrl}/api/files/by-ip/export/xlsx?${query.toString()}`,
     {
       headers: { Authorization: `Bearer ${token}` },
-    },
+    }
   );
 
   if (!res.ok) {
@@ -217,11 +244,16 @@ async function exportXLSXByIp() {
   window.URL.revokeObjectURL(url);
 }
 
-watch([searchTerm, sortOrder], ([newSearch]) => {
-  clearTimeout(debounceTimer.value);
+function changePage(newPage) {
+  currentPage.value = newPage;
+  searchByIp();
+}
 
+watch([searchTerm, sortOrder], () => {
+  clearTimeout(debounceTimer.value);
   debounceTimer.value = setTimeout(() => {
-    if (searchIp.value && (newSearch.length === 0 || newSearch.length >= 2)) {
+    if (searchIp.value.length > 0) {
+      currentPage.value = 1;
       searchByIp();
     }
   }, 300);
@@ -233,6 +265,11 @@ onMounted(() => {
   searchIp.value = route.query.ip || "";
   searchTerm.value = route.query.search || "";
   sortOrder.value = route.query.sort || "desc";
+  currentPage.value = parseInt(route.query.page) || 1;
+
+  if (searchIp.value) {
+    searchByIp();
+  }
 
   if (searchIp.value) {
     searchByIp();
