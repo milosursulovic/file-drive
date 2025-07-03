@@ -42,6 +42,14 @@
         >
           📤 Izvezi CSV
         </button>
+
+        <button
+          v-if="searchedFiles.length"
+          @click="exportXLSXByIp"
+          class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
+        >
+          📤 Export XLSX
+        </button>
       </div>
 
       <ul v-if="searchedFiles.length" class="space-y-2">
@@ -179,6 +187,34 @@ async function exportCSV() {
     alert("Neuspešan izvoz CSV-a");
     console.error(err);
   }
+}
+
+async function exportXLSXByIp() {
+  const query = new URLSearchParams({
+    ip: searchIp.value,
+    search: searchTerm.value || "",
+    sort: sortOrder.value,
+  });
+
+  const res = await fetch(
+    `${apiUrl}/api/files/by-ip/export/xlsx?${query.toString()}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+
+  if (!res.ok) {
+    alert("Greška pri eksportovanju XLSX fajla");
+    return;
+  }
+
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `fajlovi-${searchIp.value}.xlsx`;
+  link.click();
+  window.URL.revokeObjectURL(url);
 }
 
 watch([searchTerm, sortOrder], ([newSearch]) => {

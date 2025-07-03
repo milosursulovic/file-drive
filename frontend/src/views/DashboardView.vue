@@ -82,6 +82,13 @@
         >
           📤 Izvezi CSV
         </button>
+
+        <button
+          @click="exportXLSX"
+          class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
+        >
+          📤 Export XLSX
+        </button>
       </div>
 
       <ul v-if="files.length" class="space-y-2">
@@ -277,6 +284,33 @@ async function exportCSV() {
     alert("Neuspešan izvoz CSV-a");
     console.error(err);
   }
+}
+
+async function exportXLSX() {
+  const query = new URLSearchParams({
+    search: searchTerm.value || "",
+    sort: sortOrder.value || "desc",
+  });
+
+  const res = await fetch(
+    `${apiUrl}/api/files/export/xlsx?${query.toString()}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+
+  if (!res.ok) {
+    alert("Greška pri eksportovanju");
+    return;
+  }
+
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "fajlovi.xlsx";
+  link.click();
+  window.URL.revokeObjectURL(url);
 }
 
 watch([searchTerm, sortOrder], ([newSearch, newSort]) => {
