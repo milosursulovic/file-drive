@@ -32,7 +32,6 @@
           :key="file.name"
           class="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition"
         >
-          <!-- Leva strana: ime + kategorija -->
           <div>
             <p class="text-gray-900 font-semibold text-base truncate">
               📄 {{ file.original }}
@@ -45,7 +44,6 @@
             </p>
           </div>
 
-          <!-- Desna strana: preuzimanje + datum -->
           <div class="flex flex-col sm:items-end gap-2 mt-4 sm:mt-0">
             <div class="flex gap-4 justify-end">
               <button

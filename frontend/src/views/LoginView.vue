@@ -2,7 +2,6 @@
   <div
     class="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-slate-100 px-4"
   >
-    <!-- Kartica -->
     <div
       class="bg-white/80 backdrop-blur-md p-8 rounded-2xl shadow-2xl w-full max-w-sm"
     >
@@ -36,7 +35,6 @@
       </p>
     </div>
 
-    <!-- Footer -->
     <footer class="text-center text-sm text-gray-500 mt-10">
       <div>
         &copy; {{ new Date().getFullYear() }} Informacioni sistem Opšte bolnice
