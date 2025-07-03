@@ -5,6 +5,7 @@ import path from "path";
 import { verifyToken } from "../middlewares/auth.js";
 import FileEntry from "../models/FileEntry.js";
 import { Parser } from "json2csv";
+import XLSX from "xlsx";
 
 const uploadsDir = path.join("uploads");
 
@@ -191,6 +192,49 @@ router.get("/export/csv", verifyToken, async (req, res) => {
   res.status(200).end(csv);
 });
 
+router.get("/export/xlsx", verifyToken, async (req, res) => {
+  const user = req.user;
+  const ip = getClientIp(req);
+  const search = req.query.search?.toLowerCase() || "";
+  const sort = req.query.sort === "asc" ? 1 : -1;
+
+  let query = {};
+
+  if (user.role === "admin" && req.query.ip) {
+    query.ip = req.query.ip;
+  } else {
+    query.ip = ip;
+  }
+
+  if (search) {
+    query.originalname = { $regex: search, $options: "i" };
+  }
+
+  const files = await FileEntry.find(query).sort({ timestamp: sort });
+
+  const data = files.map((e) => ({
+    Naziv: e.originalname,
+    Fajl: e.filename,
+    Kategorija: e.category || "Ostalo",
+    IP: e.ip,
+    DatumDodavanja: new Date(e.timestamp).toLocaleString("sr-RS"),
+    Velicina: e.size || "",
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Fajlovi");
+
+  const buffer = XLSX.write(wb, { bookType: "xlsx", type: "buffer" });
+
+  res.setHeader("Content-Disposition", `attachment; filename=fajlovi.xlsx`);
+  res.setHeader(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  );
+  res.send(buffer);
+});
+
 router.get("/by-ip/export/csv", verifyToken, async (req, res) => {
   const requestingUser = req.user;
   if (requestingUser.role !== "admin") {
@@ -227,6 +271,50 @@ router.get("/by-ip/export/csv", verifyToken, async (req, res) => {
   res.header("Content-Type", "text/csv");
   res.attachment(`fajlovi-${ip}.csv`);
   res.send(csv);
+});
+
+router.get("/by-ip/export/xlsx", verifyToken, async (req, res) => {
+  const user = req.user;
+  if (user.role !== "admin")
+    return res.status(403).json({ msg: "Pristup zabranjen" });
+
+  const ip = req.query.ip;
+  const search = req.query.search?.toLowerCase() || "";
+  const sort = req.query.sort === "asc" ? 1 : -1;
+
+  if (!ip) return res.status(400).json({ msg: "IP adresa je obavezna" });
+
+  const query = { ip };
+  if (search) {
+    query.originalname = { $regex: search, $options: "i" };
+  }
+
+  const entries = await FileEntry.find(query).sort({ timestamp: sort });
+
+  const data = entries.map((e) => ({
+    Naziv: e.originalname,
+    Fajl: e.filename,
+    Kategorija: e.category || "Ostalo",
+    IP: e.ip,
+    DatumDodavanja: new Date(e.timestamp).toLocaleString("sr-RS"),
+    Velicina: e.size || "",
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Fajlovi");
+
+  const buffer = XLSX.write(wb, { bookType: "xlsx", type: "buffer" });
+
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename=fajlovi-${ip}.xlsx`
+  );
+  res.setHeader(
+    "Content-Type",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  );
+  res.send(buffer);
 });
 
 export default router;
