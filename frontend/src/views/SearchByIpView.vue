@@ -30,20 +30,34 @@
         <li
           v-for="file in searchedFiles"
           :key="file.name"
-          class="bg-white p-3 rounded shadow flex justify-between items-center"
+          class="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition"
         >
+          <!-- Leva strana: ime + kategorija -->
           <div>
-            <p class="text-gray-800 font-medium truncate">
-              {{ file.original }}
+            <p class="text-gray-900 font-semibold text-base truncate">
+              📄 {{ file.original }}
             </p>
-            <p class="text-xs text-gray-500">
-              📁 Kategorija: {{ file.category || "Ostalo" }}
+            <p class="text-sm text-gray-500 mt-1">
+              📂 Kategorija:
+              <span class="font-medium text-gray-700">{{
+                file.category || "Ostalo"
+              }}</span>
             </p>
           </div>
-          <div class="flex gap-3">
-            <button @click="downloadFile(file.name)" class="text-blue-600">
-              Preuzmi ⬇️
-            </button>
+
+          <!-- Desna strana: preuzimanje + datum -->
+          <div class="flex flex-col sm:items-end gap-2 mt-4 sm:mt-0">
+            <div class="flex gap-4 justify-end">
+              <button
+                @click="downloadFile(file.name)"
+                class="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium"
+              >
+                ⬇️ <span>Preuzmi</span>
+              </button>
+            </div>
+            <div class="text-xs text-gray-500 flex items-center gap-1">
+              ⏱️ Dodato: {{ formatDate(file.timestamp) }}
+            </div>
           </div>
         </li>
       </ul>
@@ -59,6 +73,7 @@
 import { ref, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import MainLayout from "@/layouts/MainLayout.vue";
+import { formatDate } from "@/utils/date.js";
 
 const apiUrl = import.meta.env.VITE_API_URL;
 const token = localStorage.getItem("token");
@@ -79,11 +94,11 @@ async function searchByIp(search = "") {
   try {
     const res = await fetch(
       `${apiUrl}/api/files/by-ip/${searchIp.value}?search=${encodeURIComponent(
-        search,
+        search
       )}`,
       {
         headers: { Authorization: `Bearer ${token}` },
-      },
+      }
     );
 
     if (!res.ok) throw new Error("Greška pri pretrazi");

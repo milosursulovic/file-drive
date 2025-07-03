@@ -74,31 +74,39 @@
         <li
           v-for="file in files"
           :key="file.name"
-          class="flex items-center justify-between bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition"
+          class="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition"
         >
           <div>
-            <p class="text-gray-800 font-medium truncate">
-              {{ file.original }}
+            <p class="text-gray-900 font-semibold text-base truncate">
+              📄 {{ file.original }}
             </p>
-            <p class="text-xs text-gray-500">
-              📁 Kategorija: {{ file.category || "Ostalo" }}
+            <p class="text-sm text-gray-500 mt-1">
+              📂 Kategorija:
+              <span class="font-medium text-gray-700">{{
+                file.category || "Ostalo"
+              }}</span>
             </p>
           </div>
 
-          <div class="flex items-center gap-4">
-            <button
-              @click="downloadFile(file.name)"
-              class="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium"
-            >
-              ⬇️ <span>Preuzmi</span>
-            </button>
+          <div class="flex flex-col sm:items-end gap-2 mt-4 sm:mt-0">
+            <div class="flex gap-4 justify-end">
+              <button
+                @click="downloadFile(file.name)"
+                class="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium"
+              >
+                ⬇️ <span>Preuzmi</span>
+              </button>
 
-            <button
-              @click="deleteFile(file.name)"
-              class="flex items-center gap-1 text-red-600 hover:text-red-800 text-sm font-medium"
-            >
-              🗑️ <span>Obriši</span>
-            </button>
+              <button
+                @click="deleteFile(file.name)"
+                class="flex items-center gap-1 text-red-600 hover:text-red-800 text-sm font-medium"
+              >
+                🗑️ <span>Obriši</span>
+              </button>
+            </div>
+            <div class="text-xs text-gray-500 flex items-center gap-1">
+              ⏱️ Dodato: {{ formatDate(file.timestamp) }}
+            </div>
           </div>
         </li>
       </ul>
@@ -111,6 +119,7 @@
 import { ref, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import MainLayout from "@/layouts/MainLayout.vue";
+import { formatDate } from "@/utils/date.js";
 
 const showUpload = ref(false);
 const selectedFile = ref(null);
@@ -139,7 +148,7 @@ async function fetchFiles(search = "") {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      },
+      }
     );
     if (!res.ok) throw new Error("Neuspešno učitavanje fajlova");
     files.value = await res.json();
@@ -202,7 +211,7 @@ async function downloadFile(filename) {
 
 async function deleteFile(filename) {
   const confirmDelete = confirm(
-    `Da li si siguran da želiš da obrišeš fajl "${filename}"?`,
+    `Da li si siguran da želiš da obrišeš fajl "${filename}"?`
   );
   if (!confirmDelete) return;
 
