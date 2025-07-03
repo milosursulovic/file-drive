@@ -34,6 +34,14 @@
           <option value="desc">📅 Najnoviji prvo</option>
           <option value="asc">📅 Najstariji prvo</option>
         </select>
+
+        <button
+          v-if="searchedFiles.length"
+          @click="exportCSV"
+          class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 text-sm"
+        >
+          📤 Izvezi CSV
+        </button>
       </div>
 
       <ul v-if="searchedFiles.length" class="space-y-2">
@@ -139,6 +147,38 @@ async function downloadFile(filename) {
   link.download = filename;
   link.click();
   window.URL.revokeObjectURL(url);
+}
+
+async function exportCSV() {
+  const query = new URLSearchParams({
+    ip: searchIp.value,
+    search: searchTerm.value || "",
+    sort: sortOrder.value,
+  });
+
+  try {
+    const res = await fetch(
+      `${apiUrl}/api/files/by-ip/export/csv?${query.toString()}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    if (!res.ok) throw new Error("Greška pri izvozu CSV-a");
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `fajlovi-${searchIp.value || "ip"}.csv`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    alert("Neuspešan izvoz CSV-a");
+    console.error(err);
+  }
 }
 
 watch([searchTerm, sortOrder], ([newSearch]) => {

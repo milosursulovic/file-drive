@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import { verifyToken } from "../middlewares/auth.js";
 import FileEntry from "../models/FileEntry.js";
+import { Parser } from "json2csv";
 
 const uploadsDir = path.join("uploads");
 
@@ -151,6 +152,81 @@ router.delete("/:filename", verifyToken, async (req, res) => {
   await FileEntry.deleteOne({ filename });
 
   res.json({ msg: "Fajl uspešno obrisan" });
+});
+
+router.get("/export/csv", verifyToken, async (req, res) => {
+  const user = req.user;
+  const ip = getClientIp(req);
+  const search = req.query.search?.toLowerCase() || "";
+  const sort = req.query.sort === "asc" ? 1 : -1;
+
+  let query = {};
+
+  if (user.role === "admin" && req.query.ip) {
+    query.ip = req.query.ip;
+  } else {
+    query.ip = ip;
+  }
+
+  if (search) {
+    query.originalname = { $regex: search, $options: "i" };
+  }
+
+  const files = await FileEntry.find(query).sort({ timestamp: sort });
+
+  const fields = [
+    { label: "Originalno ime", value: "originalname" },
+    { label: "Ime fajla", value: "filename" },
+    { label: "IP adresa", value: "ip" },
+    { label: "Kategorija", value: "category" },
+    { label: "Datum", value: (row) => row.timestamp.toISOString() },
+    { label: "Veličina (B)", value: "size" },
+  ];
+
+  const json2csv = new Parser({ fields });
+  const csv = json2csv.parse(files);
+
+  res.setHeader("Content-Type", "text/csv");
+  res.setHeader("Content-Disposition", "attachment; filename=fajlovi.csv");
+  res.status(200).end(csv);
+});
+
+router.get("/by-ip/export/csv", verifyToken, async (req, res) => {
+  const requestingUser = req.user;
+  if (requestingUser.role !== "admin") {
+    return res.status(403).json({ msg: "Pristup zabranjen" });
+  }
+
+  const ip = req.query.ip;
+  const search = req.query.search?.toLowerCase() || "";
+  const sort = req.query.sort === "asc" ? 1 : -1;
+
+  if (!ip) {
+    return res.status(400).json({ msg: "IP adresa je obavezna" });
+  }
+
+  const query = { ip };
+  if (search) {
+    query.originalname = { $regex: search, $options: "i" };
+  }
+
+  const entries = await FileEntry.find(query).sort({ timestamp: sort });
+
+  const data = entries.map((e) => ({
+    Naziv: e.originalname,
+    Fajl: e.filename,
+    Kategorija: e.category || "Ostalo",
+    IP: e.ip,
+    DatumDodavanja: new Date(e.timestamp).toLocaleString("sr-RS"),
+    Velicina: e.size || "",
+  }));
+
+  const parser = new Parser({ delimiter: ";" });
+  const csv = parser.parse(data);
+
+  res.header("Content-Type", "text/csv");
+  res.attachment(`fajlovi-${ip}.csv`);
+  res.send(csv);
 });
 
 export default router;

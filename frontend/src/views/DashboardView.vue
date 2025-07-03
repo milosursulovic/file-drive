@@ -75,6 +75,13 @@
           <option value="desc">📅 Najnoviji prvo</option>
           <option value="asc">📅 Najstariji prvo</option>
         </select>
+
+        <button
+          @click="exportCSV"
+          class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 text-sm"
+        >
+          📤 Izvezi CSV
+        </button>
       </div>
 
       <ul v-if="files.length" class="space-y-2">
@@ -241,6 +248,34 @@ async function deleteFile(filename) {
     fetchFiles();
   } catch (err) {
     error.value = "Greška pri brisanju fajla";
+  }
+}
+
+async function exportCSV() {
+  try {
+    const res = await fetch(
+      `${apiUrl}/api/files/export/csv?search=${encodeURIComponent(
+        searchTerm.value,
+      )}&sort=${sortOrder.value}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    if (!res.ok) throw new Error("Greška pri izvozu CSV-a");
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "fajlovi.csv";
+    link.click();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    alert("Neuspešan izvoz CSV-a");
+    console.error(err);
   }
 }
 
