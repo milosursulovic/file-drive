@@ -60,14 +60,21 @@
 
     <div class="mt-10">
       <h3 class="text-lg font-semibold mb-4">📁 Lista fajlova</h3>
-      <div class="mb-4">
+      <div class="mb-4 flex flex-col sm:flex-row gap-4 sm:items-center">
         <input
           v-model="searchTerm"
-          @input="fetchFiles(searchTerm)"
           type="text"
           placeholder="🔍 Pretraži po imenu fajla..."
           class="border border-gray-300 rounded px-4 py-2 w-full sm:w-96 text-sm"
         />
+
+        <select
+          v-model="sortOrder"
+          class="border border-gray-300 rounded px-4 py-2 text-sm text-gray-700 w-full sm:w-auto"
+        >
+          <option value="desc">📅 Najnoviji prvo</option>
+          <option value="asc">📅 Najstariji prvo</option>
+        </select>
       </div>
 
       <ul v-if="files.length" class="space-y-2">
@@ -132,7 +139,7 @@ const searchTerm = ref("");
 const debounceTimer = ref(null);
 const route = useRoute();
 const router = useRouter();
-
+const sortOrder = ref("desc");
 const apiUrl = import.meta.env.VITE_API_URL;
 const token = localStorage.getItem("token");
 
@@ -140,16 +147,17 @@ function handleFileChange(e) {
   selectedFile.value = e.target.files[0];
 }
 
-async function fetchFiles(search = "") {
+async function fetchFiles(search = "", sort = "desc") {
   try {
-    const res = await fetch(
-      `${apiUrl}/api/files?search=${encodeURIComponent(search)}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    const url = `${apiUrl}/api/files?search=${encodeURIComponent(
+      search,
+    )}&sort=${sort}`;
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
     if (!res.ok) throw new Error("Neuspešno učitavanje fajlova");
     files.value = await res.json();
   } catch (err) {
@@ -211,7 +219,7 @@ async function downloadFile(filename) {
 
 async function deleteFile(filename) {
   const confirmDelete = confirm(
-    `Da li si siguran da želiš da obrišeš fajl "${filename}"?`
+    `Da li si siguran da želiš da obrišeš fajl "${filename}"?`,
   );
   if (!confirmDelete) return;
 
@@ -232,11 +240,16 @@ async function deleteFile(filename) {
   }
 }
 
-watch(searchTerm, (newTerm) => {
+watch([searchTerm, sortOrder], ([newSearch, newSort]) => {
   clearTimeout(debounceTimer.value);
   debounceTimer.value = setTimeout(() => {
-    router.replace({ query: { ...route.query, search: newTerm || undefined } });
-    fetchFiles(newTerm);
+    router.replace({
+      query: {
+        search: newSearch || undefined,
+        sort: newSort || undefined,
+      },
+    });
+    fetchFiles(newSearch, newSort);
   }, 300);
 });
 
@@ -244,8 +257,9 @@ onMounted(() => {
   document.title = `Početna - FileDrive`;
   user.value = JSON.parse(localStorage.getItem("user") || "null");
 
-  const initialSearch = route.query.search || "";
-  searchTerm.value = initialSearch;
-  fetchFiles(initialSearch);
+  searchTerm.value = route.query.search || "";
+  sortOrder.value = route.query.sort || "desc";
+
+  fetchFiles(searchTerm.value, sortOrder.value);
 });
 </script>

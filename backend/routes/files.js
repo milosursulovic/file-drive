@@ -32,6 +32,7 @@ const getClientIp = (req) =>
 router.get("/", verifyToken, async (req, res) => {
   const ip = getClientIp(req);
   const search = req.query.search?.toLowerCase() || "";
+  const sort = req.query.sort === "asc" ? 1 : -1;
 
   let query = { ip };
 
@@ -39,7 +40,7 @@ router.get("/", verifyToken, async (req, res) => {
     query.originalname = { $regex: search, $options: "i" };
   }
 
-  const entries = await FileEntry.find(query).sort({ timestamp: -1 });
+  const entries = await FileEntry.find(query).sort({ timestamp: sort });
 
   res.json(
     entries.map((e) => ({
@@ -51,7 +52,7 @@ router.get("/", verifyToken, async (req, res) => {
   );
 });
 
-router.get("/by-ip/:ip", verifyToken, async (req, res) => {
+router.get("/by-ip", verifyToken, async (req, res) => {
   const requestingUser = req.user;
 
   if (requestingUser.role !== "admin") {
@@ -59,7 +60,12 @@ router.get("/by-ip/:ip", verifyToken, async (req, res) => {
   }
 
   const search = req.query.search?.toLowerCase() || "";
-  const ip = req.params.ip;
+  const sort = req.query.sort === "asc" ? 1 : -1;
+  const ip = req.query.ip;
+
+  if (!ip) {
+    return res.status(400).json({ msg: "IP adresa je obavezna" });
+  }
 
   let query = { ip };
 
@@ -67,7 +73,7 @@ router.get("/by-ip/:ip", verifyToken, async (req, res) => {
     query.originalname = { $regex: search, $options: "i" };
   }
 
-  const entries = await FileEntry.find(query).sort({ timestamp: -1 });
+  const entries = await FileEntry.find(query).sort({ timestamp: sort });
 
   res.json(
     entries.map((e) => ({

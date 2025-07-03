@@ -3,7 +3,9 @@
     <div class="max-w-4xl mx-auto py-10">
       <h2 class="text-2xl font-semibold mb-4">🔍 Pretraga po IP adresi</h2>
 
-      <div class="flex flex-col sm:flex-row gap-4 mb-6">
+      <div
+        class="flex flex-col sm:flex-row flex-wrap gap-4 mb-6 sm:items-center"
+      >
         <input
           v-model="searchIp"
           placeholder="Unesi IP adresu"
@@ -19,11 +21,19 @@
         <input
           v-if="searchedFiles.length"
           v-model="searchTerm"
-          @input="fetchFiles(searchTerm)"
           type="text"
           placeholder="🔍 Pretraži po imenu fajla..."
           class="border border-gray-300 rounded px-4 py-2 w-full sm:w-96 text-sm"
         />
+
+        <select
+          v-if="searchedFiles.length"
+          v-model="sortOrder"
+          class="border border-gray-300 rounded px-4 py-2 text-sm text-gray-700 w-full sm:w-auto"
+        >
+          <option value="desc">📅 Najnoviji prvo</option>
+          <option value="asc">📅 Najstariji prvo</option>
+        </select>
       </div>
 
       <ul v-if="searchedFiles.length" class="space-y-2">
@@ -75,29 +85,31 @@ import { formatDate } from "@/utils/date.js";
 
 const apiUrl = import.meta.env.VITE_API_URL;
 const token = localStorage.getItem("token");
-
 const searchIp = ref("");
 const searchedFiles = ref([]);
 const searchPerformed = ref(false);
-
 const searchTerm = ref("");
 const debounceTimer = ref(null);
 const route = useRoute();
 const router = useRouter();
+const sortOrder = ref("desc");
 
-async function searchByIp(search = "") {
+async function searchByIp() {
   searchPerformed.value = false;
   searchedFiles.value = [];
 
+  const query = new URLSearchParams({
+    ip: searchIp.value,
+    search: searchTerm.value || "",
+    sort: sortOrder.value,
+  });
+
+  router.replace({ query: Object.fromEntries(query.entries()) });
+
   try {
-    const res = await fetch(
-      `${apiUrl}/api/files/by-ip/${searchIp.value}?search=${encodeURIComponent(
-        search
-      )}`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+    const res = await fetch(`${apiUrl}/api/files/by-ip?${query.toString()}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
     if (!res.ok) throw new Error("Greška pri pretrazi");
     const data = await res.json();
@@ -125,19 +137,25 @@ async function downloadFile(filename) {
   window.URL.revokeObjectURL(url);
 }
 
-watch(searchTerm, (newTerm) => {
+watch([searchTerm, sortOrder], ([newSearch]) => {
   clearTimeout(debounceTimer.value);
+
   debounceTimer.value = setTimeout(() => {
-    router.replace({ query: { ...route.query, search: newTerm || undefined } });
-    searchByIp(newTerm);
+    if (searchIp.value && (newSearch.length === 0 || newSearch.length >= 2)) {
+      searchByIp();
+    }
   }, 300);
 });
 
 onMounted(() => {
   document.title = `Pretraga IP - FileDrive`;
 
-  const initialSearch = route.query.search || "";
-  searchTerm.value = initialSearch;
-  searchByIp(initialSearch);
+  searchIp.value = route.query.ip || "";
+  searchTerm.value = route.query.search || "";
+  sortOrder.value = route.query.sort || "desc";
+
+  if (searchIp.value) {
+    searchByIp();
+  }
 });
 </script>
