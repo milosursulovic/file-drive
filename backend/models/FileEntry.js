@@ -10,6 +10,7 @@ const fileEntrySchema = new mongoose.Schema({
     default: "Ostalo",
   },
   timestamp: { type: Date, default: Date.now },
+  size: { type: Number },
 });
 
 export default mongoose.model("FileEntry", fileEntrySchema);

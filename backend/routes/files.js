@@ -48,6 +48,7 @@ router.get("/", verifyToken, async (req, res) => {
       original: e.originalname,
       category: e.category,
       timestamp: e.timestamp,
+      size: e.size,
     }))
   );
 });
@@ -81,6 +82,7 @@ router.get("/by-ip", verifyToken, async (req, res) => {
       original: e.originalname,
       category: e.category,
       timestamp: e.timestamp,
+      size: e.size,
     }))
   );
 });
@@ -109,7 +111,6 @@ router.post("/upload", verifyToken, upload.single("file"), async (req, res) => {
   if (!req.file) return res.status(400).json({ msg: "Izaberite fajl" });
 
   const ip = getClientIp(req);
-
   const category = req.body.category || "Ostalo";
 
   const entry = new FileEntry({
@@ -117,6 +118,7 @@ router.post("/upload", verifyToken, upload.single("file"), async (req, res) => {
     originalname: req.file.originalname,
     ip,
     category,
+    size: req.file.size,
   });
 
   await entry.save();
@@ -126,6 +128,7 @@ router.post("/upload", verifyToken, upload.single("file"), async (req, res) => {
     filename: entry.filename,
     originalname: entry.originalname,
     ip,
+    size: entry.size,
   });
 });
 

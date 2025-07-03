@@ -66,6 +66,9 @@
             <div class="text-xs text-gray-500 flex items-center gap-1">
               ⏱️ Dodato: {{ formatDate(file.timestamp) }}
             </div>
+            <div class="text-xs text-gray-500 flex items-center gap-1">
+              📦 Veličina: {{ formatFileSize(file.size) }}
+            </div>
           </div>
         </li>
       </ul>
@@ -82,6 +85,7 @@ import { ref, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import MainLayout from "@/layouts/MainLayout.vue";
 import { formatDate } from "@/utils/date.js";
+import { formatFileSize } from "@/utils/file.js";
 
 const apiUrl = import.meta.env.VITE_API_URL;
 const token = localStorage.getItem("token");
